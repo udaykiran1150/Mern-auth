@@ -92,4 +92,75 @@ export const  logout=async (req,res)=>
     }
 }
 
+export const  sendVerificationOtp =async(req ,res)=>
+{        
 
+     try{
+
+     
+             let {userId}=req.body;
+             let user=await userModel.findById(userId);
+             if(user.isAccountVerified)
+             {
+               res.json({success:true,message:"Account alredy verified"});
+             }
+
+             let otp =    String(Math.floor(100000+(Math.random()*900000)));
+             
+             user.verifyOtp=otp;
+             user.verifyOtpExpireAt= Date.now()*24*60*60*1000;
+             await user.save();
+
+             let mailOptions=
+             {
+               from :process.env.SENDER_EMAIL,
+               to:user.email,
+               subject:'Otp for your login',
+               text:`your otp:${otp} for login`
+             }
+              await transporter.sendMail(mailOptions);
+             
+             return res.json({success:true,message:'otp send successfully'})
+    }
+    catch(err)
+    {
+       return  res.json({success:false,message:err.message})
+    }
+}
+
+export const verifyEmail=async(req,res)=>
+{
+        let {userId,otp}=req.body;
+        if(!userId || !otp)
+        {
+          return res.json({suceess:false,message:'missing details'});
+        }
+        try{
+              let user= await userModel.findById(userId);
+              if(!user)
+              {
+                return res.json({success:false,message:'no user found'});
+              }
+              if(user.verifyOtp==='' || user.verifyOtp!==otp)
+              {
+                 return res.json({success:false,message:'Invalid otp'});
+              }
+
+              if(user.verifyOtpExpireAt<Date.now())
+              {
+                return res.json({success:false,message:'otp is expired'})
+              }
+              
+              user.isAccountVerified=true;
+              user.verifyOtp='';
+              user.verifyOtpExpireAt=0;
+              await user.save()
+              return res.json({success:true,message:'account verified successfully'})
+
+
+        }catch(err)
+        {
+          return res.json({success:false,message:err.message})
+        }
+
+}
