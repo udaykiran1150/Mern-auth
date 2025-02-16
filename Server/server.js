@@ -5,6 +5,8 @@ import 'dotenv/config'
 let port=process.env.PORT||5000;
 import authRouter from './Routes/authRoutes.js'
 import connectDb from './config/mongodb.js'
+import { userAuth } from './MiddleWare/userAuth.js';
+
 let hostname='127.0.0.1'
 let app=express();
 connectDb()
@@ -19,6 +21,7 @@ app.get('/',(req,res)=>
     res.send("API working")
 })
 app.use('/api/auth',authRouter);
+
 app.listen(port,hostname,()=>
 {
     console.log(`Server at http://${hostname}:${port}`)
